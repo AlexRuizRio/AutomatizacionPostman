@@ -26,13 +26,8 @@ pipeline {
         stage('Ejecutar Collection') {
             steps {
                 echo 'Ejecutando Collection de Postman...'
-                bat """node node_modules\\newman\\bin\\newman.js run Onboarding.postman_collection.json \\
-                    -e local3478.postman_environment.json \\
-                    -d data.csv \\
-                    --folder "Ejercicio8" \\
-                    -r cli,htmlextra,junit \\
-                    --reporter-htmlextra-export "${REPORT_HTML}" \\
-                    --reporter-junit-export "${REPORT_XML}" """
+                bat 'node node_modules\\newman\\bin\\newman.js run Onboarding.postman_collection.json -e local3478.postman_environment.json -d data.csv --folder "Ejercicio8" -r cli,htmlextra,junit --reporter-htmlextra-export "reports\\reporte.html" --reporter-junit-export "reports\\reporte.xml"'
+
             }
         }
 
