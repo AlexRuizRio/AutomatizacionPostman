@@ -12,8 +12,8 @@ pipeline {
 
         stage('Instalar Newman') {
             steps {
-                echo 'Instalando Newman globalmente...'
-                bat 'npm install -g newman newman-reporter-htmlextra'
+                echo 'Instalando Newman localmente...'
+                bat 'npm install newman newman-reporter-htmlextra'
             }
         }
 
@@ -21,7 +21,7 @@ pipeline {
             steps {
                 echo 'Ejecutando colección de Postman...'
                 bat '''
-                    newman run Onboarding.postman_collection.json ^
+                node node_modules\\newman\\bin\\newman.js run Onboarding.postman_collection.json ^
                     -e local3478.postman_environment.json ^
                     -d data.csv ^
                     --folder "Ejercicio8" ^
@@ -34,15 +34,14 @@ pipeline {
 
         stage('Publicar Reportes') {
             steps {
-                echo 'Publicando reportes...'
                 junit '**/reporte.xml'
                 publishHTML([
                     allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
                     reportDir: '.',
                     reportFiles: 'reporte.html',
-                    reportName: 'Reporte HTML Newman'
+                    reportName: 'Reporte HTML Newman',
+                    keepAll: true,
+                    alwaysLinkToLastBuild: true
                 ])
             }
         }
@@ -50,7 +49,7 @@ pipeline {
 
     post {
         always {
-            echo '✅ Pipeline finalizado. Revisa los reportes en Jenkins.'
+            echo 'Pipeline finalizado. Revisa los reportes en Jenkins.'
         }
     }
 }
