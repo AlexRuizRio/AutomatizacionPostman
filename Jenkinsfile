@@ -1,50 +1,67 @@
 pipeline {
     agent any
 
+    environment {
+        REPORT_DIR = "reports"
+        REPORT_HTML = "${REPORT_DIR}\\reporte.html"
+        REPORT_XML = "${REPORT_DIR}\\reporte.xml"
+    }
+
     stages {
 
-        stage('Checkout') {
+        stage('Preparar Workspace') {
             steps {
-                echo 'Realizando checkout del repositorio...'
-                checkout scm
+                echo 'Preparando carpeta de reportes...'
+                bat 'if not exist reports mkdir reports'
             }
         }
 
-        stage('Instalar Newman') {
+        stage('Instalar Newman Local') {
             steps {
-                echo 'Instalando Newman localmente...'
+                echo 'Instalando Newman localmente en el workspace...'
                 bat 'npm install newman newman-reporter-htmlextra'
             }
         }
 
-        stage('Ejecutar Tests con Newman') {
+        stage('Ejecutar Collection') {
             steps {
-                echo 'Ejecutando colección de Postman...'
-                bat '''
-                node node_modules\\newman\\bin\\newman.js run Onboarding.postman_collection.json ^
-                    -e local3478.postman_environment.json ^
-                    -d data.csv ^
-                    --folder "Ejercicio8" ^
-                    -r cli,htmlextra,junit ^
-                    --reporter-htmlextra-export reporte.html ^
-                    --reporter-junit-export reporte.xml
-                '''
+                echo 'Ejecutando Collection de Postman...'
+                bat """node node_modules\\newman\\bin\\newman.js run Onboarding.postman_collection.json \\
+                    -e local3478.postman_environment.json \\
+                    -d data.csv \\
+                    --folder "Ejercicio8" \\
+                    -r cli,htmlextra,junit \\
+                    --reporter-htmlextra-export "${REPORT_HTML}" \\
+                    --reporter-junit-export "${REPORT_XML}" """
             }
         }
 
         stage('Publicar Reportes') {
             steps {
-                junit '**/reporte.xml'
-                publishHTML([
-                    allowMissing: false,
-                    reportDir: '.',
-                    reportFiles: 'reporte.html',
-                    reportName: 'Reporte HTML Newman',
-                    keepAll: true,
-                    alwaysLinkToLastBuild: true
-                ])
+                echo 'Publicando reportes HTML y JUnit...'
+                script {
+                    if (fileExists(REPORT_XML)) {
+                        junit REPORT_XML
+                    } else {
+                        echo "No se encontró el reporte JUnit, saltando junit."
+                    }
+
+                    if (fileExists(REPORT_HTML)) {
+                        publishHTML([
+                            allowMissing: false,
+                            reportDir: REPORT_DIR,
+                            reportFiles: 'reporte.html',
+                            reportName: 'Reporte HTML Newman',
+                            keepAll: true,
+                            alwaysLinkToLastBuild: true
+                        ])
+                    } else {
+                        echo "No se encontró el reporte HTML, algo falló en Newman."
+                    }
+                }
             }
         }
+
     }
 
     post {
